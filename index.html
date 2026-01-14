@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日交易计分卡</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF7F00">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>每日交易计分卡</h1>
+            </div>
+            <div class="header-right">
+                <div class="time" id="currentTime"></div>
+                <div class="market-alert" id="marketAlert">A股盘面：休市</div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+                <section class="positions-section">
+                    <h2>核心持仓</h2>
+                    <div class="position-form">
+                        <input type="text" id="stockName" placeholder="股票名称" class="position-input">
+                        <input type="number" id="stockPosition" placeholder="仓位 (%)" class="position-input" min="0" max="100" step="0.1">
+                        <textarea id="stockLogic" placeholder="持仓逻辑" class="position-textarea"></textarea>
+                        <button class="add-position-btn" id="addPositionBtn">添加持仓</button>
+                    </div>
+                    <div class="positions-list" id="positionsList"></div>
+                </section>
+            </aside>
+
+            <!-- 主内容区域 -->
+            <main>
+                <section class="scoring-section">
+                    <h2>评分维度</h2>
+                    <div class="score-cards">
+                        <div class="score-card">
+                            <h3>盘前准备</h3>
+                            <div class="score-buttons">
+                                <button class="score-btn" data-dimension="0" data-score="0">0</button>
+                                <button class="score-btn" data-dimension="0" data-score="1">1</button>
+                                <button class="score-btn" data-dimension="0" data-score="2">2</button>
+                            </div>
+                            <div class="current-score" id="score0">0</div>
+                        </div>
+                        <div class="score-card">
+                            <h3>信号执行</h3>
+                            <div class="score-buttons">
+                                <button class="score-btn" data-dimension="1" data-score="0">0</button>
+                                <button class="score-btn" data-dimension="1" data-score="1">1</button>
+                                <button class="score-btn" data-dimension="1" data-score="2">2</button>
+                            </div>
+                            <div class="current-score" id="score1">0</div>
+                        </div>
+                        <div class="score-card">
+                        <h3>风险控制</h3>
+                        <div class="score-buttons">
+                            <button class="score-btn" data-dimension="2" data-score="0">0</button>
+                            <button class="score-btn" data-dimension="2" data-score="1">1</button>
+                            <button class="score-btn" data-dimension="2" data-score="2">2</button>
+                        </div>
+                        <div class="current-score" id="score2">0</div>
+                    </div>
+                        <div class="score-card">
+                            <h3>盘中定力</h3>
+                            <div class="score-buttons">
+                                <button class="score-btn" data-dimension="3" data-score="0">0</button>
+                                <button class="score-btn" data-dimension="3" data-score="1">1</button>
+                                <button class="score-btn" data-dimension="3" data-score="2">2</button>
+                            </div>
+                            <div class="current-score" id="score3">0</div>
+                        </div>
+                        <div class="score-card">
+                            <h3>复盘归档</h3>
+                            <div class="score-buttons">
+                                <button class="score-btn" data-dimension="4" data-score="0">0</button>
+                                <button class="score-btn" data-dimension="4" data-score="1">1</button>
+                                <button class="score-btn" data-dimension="4" data-score="2">2</button>
+                            </div>
+                            <div class="current-score" id="score4">0</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="total-section">
+                    <h2>今日总分</h2>
+                    <div class="total-score" id="totalScore">0</div>
+                    <div class="score-status" id="scoreStatus"></div>
+                    <button class="save-btn" id="saveBtn">保存今日评分</button>
+                </section>
+
+                <section class="chart-section">
+                    <h2>30天得分趋势</h2>
+                    <div class="chart-container">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="alert-modal" id="alertModal" style="display: none;">
+        <div class="alert-content">
+            <h2>触发强制停盘纪律！</h2>
+            <p>请立刻空仓休息！</p>
+            <button class="close-btn" id="closeAlert">关闭</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
