@@ -2,6 +2,11 @@
 let scores = [0, 0, 0, 0, 0];
 let chart = null;
 let positions = [];
+let profitData = {
+    today: 0,
+    year: 0,
+    history: {}
+};
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -12,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initAlertModal();
     initChart();
     initPositions();
+    initProfit();
     updateTotalScore();
 });
 
@@ -416,4 +422,101 @@ function deletePosition(index) {
         savePositions();
         renderPositions();
     }
+}
+
+// 初始化收益记录功能
+function initProfit() {
+    loadProfitData();
+    renderProfit();
+    
+    const saveProfitBtn = document.getElementById('saveProfitBtn');
+    saveProfitBtn.addEventListener('click', saveTodayProfit);
+}
+
+// 从localStorage加载收益数据
+function loadProfitData() {
+    const savedProfit = localStorage.getItem('profitData');
+    if (savedProfit) {
+        profitData = JSON.parse(savedProfit);
+    } else {
+        // 初始化收益数据
+        profitData = {
+            today: 0,
+            year: 0,
+            history: {}
+        };
+    }
+    
+    // 检查并更新今年累计收益
+    updateYearlyProfit();
+}
+
+// 保存收益数据到localStorage
+function saveProfitData() {
+    localStorage.setItem('profitData', JSON.stringify(profitData));
+}
+
+// 保存今日收益
+function saveTodayProfit() {
+    const todayProfitInput = document.getElementById('todayProfit');
+    const todayProfit = parseFloat(todayProfitInput.value);
+    
+    if (isNaN(todayProfit)) {
+        alert('请输入有效的收益数值');
+        return;
+    }
+    
+    // 获取今日日期
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 保存今日收益到历史记录
+    profitData.today = todayProfit;
+    profitData.history[today] = todayProfit;
+    
+    // 更新今年累计收益
+    updateYearlyProfit();
+    
+    // 保存到localStorage
+    saveProfitData();
+    
+    // 渲染更新
+    renderProfit();
+    
+    // 清空输入框
+    todayProfitInput.value = '';
+    
+    // 显示保存成功
+    alert('今日收益已保存！');
+}
+
+// 更新今年累计收益
+function updateYearlyProfit() {
+    const currentYear = new Date().getFullYear();
+    let totalProfit = 0;
+    
+    // 遍历历史记录，计算今年累计收益
+    for (const [date, profit] of Object.entries(profitData.history)) {
+        const recordYear = new Date(date).getFullYear();
+        if (recordYear === currentYear) {
+            totalProfit += profit;
+        }
+    }
+    
+    profitData.year = totalProfit;
+}
+
+// 渲染收益数据
+function renderProfit() {
+    const todayProfitValue = document.getElementById('todayProfitValue');
+    const yearProfitValue = document.getElementById('yearProfitValue');
+    
+    // 渲染今日收益
+    const todayFormatted = profitData.today.toFixed(2);
+    todayProfitValue.textContent = `¥${todayFormatted}`;
+    todayProfitValue.className = `profit-value ${profitData.today < 0 ? 'negative' : ''}`;
+    
+    // 渲染今年累计收益
+    const yearFormatted = profitData.year.toFixed(2);
+    yearProfitValue.textContent = `¥${yearFormatted}`;
+    yearProfitValue.className = `profit-value ${profitData.year < 0 ? 'negative' : ''}`;
 }

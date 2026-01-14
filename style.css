@@ -247,6 +247,94 @@ h2 {
     font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
 }
 
+/* Profit Section */
+.profit-section {
+    background-color: #ffffff;
+    border: 4px solid #FFD93D;
+    padding: 25px;
+    margin-bottom: 40px;
+    box-shadow: 8px 8px 0px #333333;
+}
+
+.profit-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 4px solid #e0e0e0;
+}
+
+.profit-input-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profit-input-item label {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333333;
+}
+
+.profit-input-field {
+    padding: 12px;
+    font-size: 1.2rem;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    width: 150px;
+    text-align: center;
+}
+
+.profit-input-field:focus {
+    outline: none;
+    border-color: #FF6B6B;
+    box-shadow: 4px 4px 0px #FF6B6B;
+}
+
+.profit-unit {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333333;
+}
+
+.profit-display {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.profit-item {
+    text-align: center;
+    background-color: #f0f0f0;
+    padding: 20px;
+    border: 3px solid #333333;
+    box-shadow: 6px 6px 0px #333333;
+    min-width: 200px;
+}
+
+.profit-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.profit-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #6BCB77;
+    text-shadow: 3px 3px 0px #333333;
+}
+
+.profit-value.negative {
+    color: #FF6B6B;
+}
+
 /* Scoring Section */
 .scoring-section {
     margin-bottom: 40px;
