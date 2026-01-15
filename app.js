@@ -10,6 +10,10 @@ let profitData = {
     history: {}
 };
 
+// 认证相关变量
+let currentUser = null;
+let userId = null;
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initTime();
@@ -23,9 +27,374 @@ document.addEventListener('DOMContentLoaded', function() {
     initPositions();
     initProfit();
     initExport();
+    initAuth(); // 初始化认证功能
     updateTotalScore();
-    updateCorrelation();
+    
+    // 检查用户登录状态
+    checkAuthStatus();
 });
+
+// 初始化认证功能
+function initAuth() {
+    // 初始化登录/注册模态框
+    const authModal = document.getElementById('authModal');
+    const loginModalBtn = document.getElementById('loginModalBtn');
+    const closeAuthBtn = document.getElementById('closeAuth');
+    
+    // 切换登录/注册表单
+    const switchToRegister = document.getElementById('switchToRegister');
+    const switchToLogin = document.getElementById('switchToLogin');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    
+    // 登录/注册按钮
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    
+    // 登出按钮
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    // 显示登录模态框
+    loginModalBtn.addEventListener('click', function() {
+        authModal.style.display = 'flex';
+    });
+    
+    // 关闭登录模态框
+    closeAuthBtn.addEventListener('click', function() {
+        authModal.style.display = 'none';
+        clearAuthForms();
+    });
+    
+    // 点击模态框外部关闭
+    window.addEventListener('click', function(event) {
+        if (event.target === authModal) {
+            authModal.style.display = 'none';
+            clearAuthForms();
+        }
+    });
+    
+    // 切换到注册表单
+    switchToRegister.addEventListener('click', function(e) {
+        e.preventDefault();
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+        clearAuthForms();
+    });
+    
+    // 切换到登录表单
+    switchToLogin.addEventListener('click', function(e) {
+        e.preventDefault();
+        registerForm.style.display = 'none';
+        loginForm.style.display = 'block';
+        clearAuthForms();
+    });
+    
+    // 登录按钮点击事件
+    loginBtn.addEventListener('click', login);
+    
+    // 注册按钮点击事件
+    registerBtn.addEventListener('click', register);
+    
+    // 登出按钮点击事件
+    logoutBtn.addEventListener('click', logout);
+    
+    // 添加Supabase Auth会话监听器
+    if (window.supabase) {
+        // 监听会话变化
+        window.supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, session);
+            
+            if (event === 'SIGNED_IN' && session) {
+                // 用户登录
+                currentUser = session.user;
+                userId = session.user.id;
+                updateUIForAuthenticatedUser();
+                loadDataFromSupabase();
+            } else if (event === 'SIGNED_OUT') {
+                // 用户登出
+                currentUser = null;
+                userId = null;
+                updateUIForUnauthenticatedUser();
+            } else if (event === 'INITIAL_SESSION' && session) {
+                // 初始会话存在
+                currentUser = session.user;
+                userId = session.user.id;
+                updateUIForAuthenticatedUser();
+                loadDataFromSupabase();
+            } else if (event === 'INITIAL_SESSION' && !session) {
+                // 初始会话不存在
+                currentUser = null;
+                userId = null;
+                updateUIForUnauthenticatedUser();
+            }
+        });
+    }
+}
+
+// 清空认证表单
+function clearAuthForms() {
+    // 清空登录表单
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    
+    // 清空注册表单
+    document.getElementById('registerEmail').value = '';
+    document.getElementById('registerPassword').value = '';
+    document.getElementById('registerConfirmPassword').value = '';
+}
+
+// 检查用户登录状态
+async function checkAuthStatus() {
+    try {
+        if (!window.supabase) {
+            console.error('Supabase客户端未初始化');
+            return;
+        }
+        
+        // 检查用户会话
+        const { data, error } = await window.supabase.auth.getSession();
+        
+        if (error) {
+            console.error('检查登录状态失败:', error);
+            return;
+        }
+        
+        if (data.session) {
+            // 用户已登录
+            currentUser = data.session.user;
+            userId = data.session.user.id;
+            updateUIForAuthenticatedUser();
+            
+            // 加载用户数据
+            await loadDataFromSupabase();
+        } else {
+            // 用户未登录
+            currentUser = null;
+            userId = null;
+            updateUIForUnauthenticatedUser();
+        }
+    } catch (error) {
+        console.error('检查登录状态失败:', error);
+    }
+}
+
+// 更新已认证用户的UI
+function updateUIForAuthenticatedUser() {
+    // 显示用户邮箱和登出按钮
+    document.getElementById('userEmail').textContent = currentUser.email;
+    document.getElementById('userEmail').style.display = 'inline-block';
+    document.getElementById('logoutBtn').style.display = 'inline-block';
+    
+    // 隐藏登录按钮
+    document.getElementById('loginModalBtn').style.display = 'none';
+    
+    // 关闭登录模态框
+    document.getElementById('authModal').style.display = 'none';
+}
+
+// 更新未认证用户的UI
+function updateUIForUnauthenticatedUser() {
+    // 隐藏用户邮箱和登出按钮
+    document.getElementById('userEmail').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'none';
+    
+    // 显示登录按钮
+    document.getElementById('loginModalBtn').style.display = 'inline-block';
+    
+    // 清空数据
+    clearUserData();
+}
+
+// 清空用户数据
+function clearUserData() {
+    scores = [0, 0, 0, 0, 0];
+    positions = [];
+    profitData = {
+        today: 0,
+        year: 0,
+        history: {}
+    };
+    
+    // 清空本地存储
+    localStorage.removeItem('scoreHistory');
+    localStorage.removeItem('positions');
+    localStorage.removeItem('profitData');
+    
+    // 更新UI
+    updateTotalScore();
+    renderPositions();
+    renderProfit();
+    updateChart();
+}
+
+// 登录功能
+async function login() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    // 简单验证
+    if (!email || !password) {
+        alert('请输入邮箱和密码');
+        return;
+    }
+    
+    try {
+        if (!window.supabase) {
+            console.error('Supabase客户端未初始化');
+            alert('Supabase客户端未初始化，请刷新页面重试');
+            return;
+        }
+        
+        // 调用Supabase登录API
+        const { data, error } = await window.supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) {
+            console.error('登录失败:', error);
+            alert('登录失败: ' + error.message);
+            return;
+        }
+        
+        // 登录成功
+        currentUser = data.user;
+        userId = data.user.id;
+        updateUIForAuthenticatedUser();
+        clearAuthForms();
+        
+        // 加载用户数据
+        await loadDataFromSupabase();
+        
+        console.log('登录成功');
+    } catch (error) {
+        console.error('登录失败:', error);
+        alert('登录失败: ' + error.message);
+    }
+}
+
+// 注册功能
+async function register() {
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    
+    // 简单验证
+    if (!email || !password || !confirmPassword) {
+        alert('请填写完整信息');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        alert('两次输入的密码不一致');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('密码长度至少为6位');
+        return;
+    }
+    
+    try {
+        if (!window.supabase) {
+            console.error('Supabase客户端未初始化');
+            alert('Supabase客户端未初始化，请刷新页面重试');
+            return;
+        }
+        
+        // 调用Supabase注册API
+        const { data, error } = await window.supabase.auth.signUp({
+            email: email,
+            password: password
+        });
+        
+        if (error) {
+            console.error('注册失败:', error);
+            alert('注册失败: ' + error.message);
+            return;
+        }
+        
+        // 注册成功
+        alert('注册成功，请登录');
+        
+        // 切换到登录表单
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        clearAuthForms();
+        
+        console.log('注册成功');
+    } catch (error) {
+        console.error('注册失败:', error);
+        alert('注册失败: ' + error.message);
+    }
+}
+
+// 登出功能
+async function logout() {
+    try {
+        if (!window.supabase) {
+            console.error('Supabase客户端未初始化');
+            return;
+        }
+        
+        // 调用Supabase登出API
+        const { error } = await window.supabase.auth.signOut();
+        
+        if (error) {
+            console.error('登出失败:', error);
+            alert('登出失败: ' + error.message);
+            return;
+        }
+        
+        // 登出成功
+        currentUser = null;
+        userId = null;
+        updateUIForUnauthenticatedUser();
+        
+        console.log('登出成功');
+    } catch (error) {
+        console.error('登出失败:', error);
+        alert('登出失败: ' + error.message);
+    }
+}
+
+// 从Supabase加载所有数据
+async function loadDataFromSupabase() {
+    // 检查用户是否已登录
+    if (!userId) {
+        console.error('用户未登录，无法加载数据');
+        return;
+    }
+    
+    try {
+        // 检查Supabase是否已初始化
+        if (!window.supabase) {
+            console.error('Supabase客户端未初始化');
+            alert('Supabase客户端未初始化，请刷新页面重试');
+            return;
+        }
+        
+        // 加载评分数据
+        await loadScoresFromSupabase();
+        
+        // 加载收益数据
+        await loadProfitsFromSupabase();
+        
+        // 加载持仓数据
+        await loadPositionsFromSupabase();
+        
+        // 更新图表和相关性分析
+        updateChart();
+        updateCorrelation();
+        renderPositions();
+        renderProfit();
+        
+        console.log('数据加载完成');
+    } catch (error) {
+        console.error('加载数据失败:', error);
+        alert('加载数据失败，请刷新页面重试');
+    }
+}
 
 // 初始化时间显示
 function initTime() {
@@ -151,36 +520,72 @@ function initSaveButton() {
     });
 }
 
-// 保存今日分数到localStorage
-function saveTodayScore() {
+// 从Supabase加载评分数据
+async function loadScoresFromSupabase() {
+    const { data, error } = await window.supabase
+        .from('trading_scores')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true });
+    
+    if (error) {
+        console.error('加载评分数据失败:', error);
+        return;
+    }
+    
+    // 转换为本地格式
+    let scoreHistory = {};
+    data.forEach(record => {
+        scoreHistory[record.date] = {
+            total: record.total_score,
+            dimensions: record.dimensions
+        };
+    });
+    
+    // 保存到localStorage（作为缓存）
+    localStorage.setItem('scoreHistory', JSON.stringify(scoreHistory));
+    
+    // 获取今日分数
+    const today = new Date().toISOString().split('T')[0];
+    if (scoreHistory[today]) {
+        scores = scoreHistory[today].dimensions;
+        updateTotalScore();
+    }
+}
+
+// 保存今日分数到Supabase
+async function saveTodayScore() {
     const today = new Date().toISOString().split('T')[0];
     const totalScore = scores.reduce((sum, score) => sum + score, 0);
     
-    // 获取历史分数
-    let scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+    // 保存到Supabase
+    const { data, error } = await window.supabase
+        .from('trading_scores')
+        .upsert({
+            user_id: userId,
+            date: today,
+            dimensions: scores,
+            total_score: totalScore
+        })
+        .select();
     
-    // 保存今日分数
-    scoreHistory[today] = {
-        total: totalScore,
-        dimensions: [...scores],
-        timestamp: Date.now()
-    };
-    
-    // 只保留最近30天的数据
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    
-    // 过滤旧数据
-    const filteredHistory = {};
-    for (const [date, data] of Object.entries(scoreHistory)) {
-        if (date >= thirtyDaysAgoStr) {
-            filteredHistory[date] = data;
-        }
+    if (error) {
+        console.error('保存评分失败:', error);
+        alert('保存失败，请重试');
+        return;
     }
     
-    // 保存回localStorage
-    localStorage.setItem('scoreHistory', JSON.stringify(filteredHistory));
+    // 更新本地缓存
+    let scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+    scoreHistory[today] = {
+        total: totalScore,
+        dimensions: [...scores]
+    };
+    localStorage.setItem('scoreHistory', JSON.stringify(scoreHistory));
+    
+    // 更新图表和雷达图
+    updateChart();
+    updateCorrelation();
     
     // 显示保存成功
     alert('今日评分已保存！');
@@ -255,31 +660,39 @@ function initChart() {
             }
         }
     });
-    
-    updateChart();
 }
 
 // 更新图表数据
 function updateChart() {
-    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
-    
-    // 转换为数组并按日期排序
-    const historyArray = Object.entries(scoreHistory)
-        .map(([date, data]) => ({ date, total: data.total }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    
-    // 准备图表数据
-    const labels = historyArray.map(item => item.date);
-    const data = historyArray.map(item => item.total);
-    
-    // 更新图表
-    chart.data.labels = labels;
-    chart.data.datasets[0].data = data;
-    chart.update();
-    
-    // 更新其他图表
-    updateRadarChart();
-    updateCorrelation();
+    try {
+        const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+        
+        // 转换为数组并按日期排序
+        const historyArray = Object.entries(scoreHistory)
+            .map(([date, data]) => ({ date, total: data.total }))
+            .sort((a, b) => a.date.localeCompare(b.date));
+        
+        // 准备图表数据
+        const labels = historyArray.map(item => item.date);
+        const data = historyArray.map(item => item.total);
+        
+        // 更新图表
+        if (chart && chart.data && chart.data.datasets) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update();
+        }
+        
+        // 更新其他图表（仅当已初始化时）
+        if (radarChart) {
+            updateRadarChart();
+        }
+        if (correlationChart) {
+            updateCorrelation();
+        }
+    } catch (error) {
+        console.error('更新图表失败:', error);
+    }
 }
 
 // 初始化雷达图
@@ -333,41 +746,39 @@ function initRadarChart() {
             }
         }
     });
-    
-    updateRadarChart();
 }
 
 // 更新雷达图数据
 function updateRadarChart() {
-    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
-    
-    if (Object.keys(scoreHistory).length === 0) {
-        radarChart.data.datasets[0].data = [0, 0, 0, 0, 0];
-        radarChart.update();
-        return;
-    }
-    
-    // 计算各维度平均得分
-    const dimensionScores = [0, 0, 0, 0, 0];
-    let totalEntries = 0;
-    
-    for (const [date, data] of Object.entries(scoreHistory)) {
-        if (data.dimensions) {
-            dimensionScores[0] += data.dimensions[0];
-            dimensionScores[1] += data.dimensions[1];
-            dimensionScores[2] += data.dimensions[2];
-            dimensionScores[3] += data.dimensions[3];
-            dimensionScores[4] += data.dimensions[4];
-            totalEntries++;
+    try {
+        const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+        
+        // 计算各维度平均得分
+        const dimensionScores = [0, 0, 0, 0, 0];
+        let totalEntries = 0;
+        
+        for (const [date, data] of Object.entries(scoreHistory)) {
+            if (data && data.dimensions) {
+                dimensionScores[0] += data.dimensions[0];
+                dimensionScores[1] += data.dimensions[1];
+                dimensionScores[2] += data.dimensions[2];
+                dimensionScores[3] += data.dimensions[3];
+                dimensionScores[4] += data.dimensions[4];
+                totalEntries++;
+            }
         }
+        
+        // 计算平均值
+        const avgScores = dimensionScores.map(score => totalEntries > 0 ? (score / totalEntries).toFixed(1) : 0);
+        
+        // 更新雷达图
+        if (radarChart && radarChart.data && radarChart.data.datasets) {
+            radarChart.data.datasets[0].data = avgScores;
+            radarChart.update();
+        }
+    } catch (error) {
+        console.error('更新雷达图失败:', error);
     }
-    
-    // 计算平均值
-    const avgScores = dimensionScores.map(score => totalEntries > 0 ? (score / totalEntries).toFixed(1) : 0);
-    
-    // 更新雷达图
-    radarChart.data.datasets[0].data = avgScores;
-    radarChart.update();
 }
 
 // 检查预警条件
@@ -430,24 +841,65 @@ if ('serviceWorker' in navigator) {
 
 // 初始化核心持仓功能
 function initPositions() {
-    loadPositions();
     renderPositions();
     
     const addPositionBtn = document.getElementById('addPositionBtn');
     addPositionBtn.addEventListener('click', addPosition);
 }
 
-// 从localStorage加载持仓数据
-function loadPositions() {
-    const savedPositions = localStorage.getItem('positions');
-    if (savedPositions) {
-        positions = JSON.parse(savedPositions);
+// 从Supabase加载持仓数据
+async function loadPositionsFromSupabase() {
+    const { data, error } = await window.supabase
+        .from('core_positions')
+        .select('*')
+        .eq('user_id', USER_ID)
+        .order('created_at', { ascending: true });
+    
+    if (error) {
+        console.error('加载持仓数据失败:', error);
+        return;
     }
+    
+    // 转换为本地格式
+    positions = data.map(record => ({
+        id: record.id,
+        name: record.name,
+        percentage: record.percentage,
+        logic: record.logic
+    }));
+    
+    // 保存到localStorage（作为缓存）
+    localStorage.setItem('positions', JSON.stringify(positions));
 }
 
-// 保存持仓数据到localStorage
-function savePositions() {
-    localStorage.setItem('positions', JSON.stringify(positions));
+// 保存持仓数据到Supabase
+async function savePositions() {
+    try {
+        // 清空现有持仓数据
+        await window.supabase
+            .from('core_positions')
+            .delete()
+            .eq('user_id', USER_ID);
+        
+        // 批量插入新数据
+        if (positions.length > 0) {
+            const positionData = positions.map(pos => ({
+                user_id: USER_ID,
+                name: pos.name,
+                percentage: pos.percentage,
+                logic: pos.logic
+            }));
+            
+            await window.supabase
+            .from('core_positions')
+            .insert(positionData);
+        }
+        
+        // 保存到localStorage（作为缓存）
+        localStorage.setItem('positions', JSON.stringify(positions));
+    } catch (error) {
+        console.error('保存持仓数据失败:', error);
+    }
 }
 
 // 渲染持仓列表
@@ -587,33 +1039,65 @@ function cancelEdit(index) {
 
 // 初始化收益记录功能
 function initProfit() {
-    loadProfitData();
     renderProfit();
     
     const saveProfitBtn = document.getElementById('saveProfitBtn');
     saveProfitBtn.addEventListener('click', saveTodayProfit);
 }
 
-// 从localStorage加载收益数据
-function loadProfitData() {
-    const savedProfit = localStorage.getItem('profitData');
-    if (savedProfit) {
-        profitData = JSON.parse(savedProfit);
-    } else {
-        // 初始化收益数据
-        profitData = {
-            today: 0,
-            year: 0,
-            history: {}
-        };
+// 从Supabase加载收益数据
+async function loadProfitsFromSupabase() {
+    const { data, error } = await window.supabase
+        .from('trading_profits')
+        .select('*')
+        .eq('user_id', USER_ID)
+        .order('date', { ascending: true });
+    
+    if (error) {
+        console.error('加载收益数据失败:', error);
+        return;
     }
     
-    // 检查并更新今年累计收益
+    // 转换为本地格式
+    let history = {};
+    data.forEach(record => {
+        history[record.date] = record.profit;
+    });
+    
+    // 更新本地数据
+    profitData.history = history;
+    
+    // 获取今日收益
+    const today = new Date().toISOString().split('T')[0];
+    profitData.today = history[today] || 0;
+    
+    // 计算今年累计收益
     updateYearlyProfit();
+    
+    // 保存到localStorage（作为缓存）
+    localStorage.setItem('profitData', JSON.stringify(profitData));
 }
 
-// 保存收益数据到localStorage
-function saveProfitData() {
+// 保存收益数据到Supabase
+async function saveProfitData() {
+    // 保存当前收益到Supabase
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await window.supabase
+        .from('trading_profits')
+        .upsert({
+            user_id: USER_ID,
+            date: today,
+            profit: profitData.today
+        })
+        .select();
+    
+    if (error) {
+        console.error('保存收益数据失败:', error);
+        return;
+    }
+    
+    // 保存到localStorage（作为缓存）
     localStorage.setItem('profitData', JSON.stringify(profitData));
 }
 
@@ -782,7 +1266,7 @@ function updateCorrelation() {
 }
 
 // 保存今日收益
-function saveTodayProfit() {
+async function saveTodayProfit() {
     const todayProfitInput = document.getElementById('todayProfit');
     const todayProfit = parseFloat(todayProfitInput.value);
     
@@ -801,11 +1285,12 @@ function saveTodayProfit() {
     // 更新今年累计收益
     updateYearlyProfit();
     
-    // 保存到localStorage
-    saveProfitData();
+    // 保存到Supabase
+    await saveProfitData();
     
     // 渲染更新
     renderProfit();
+    updateCorrelation();
     
     // 清空输入框
     todayProfitInput.value = '';

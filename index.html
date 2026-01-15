@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>每日交易计分卡</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -18,6 +21,11 @@
             <div class="header-right">
                 <div class="time" id="currentTime"></div>
                 <div class="market-alert" id="marketAlert">A股盘面：休市</div>
+                <div class="auth-section">
+                    <span id="userEmail" style="display: none;"></span>
+                    <button class="auth-btn-small" id="loginModalBtn" style="display: block;">登录</button>
+                    <button class="auth-btn-small logout-btn" id="logoutBtn" style="display: none;">登出</button>
+                </div>
             </div>
         </header>
 
@@ -164,6 +172,48 @@
         </div>
     </div>
 
+    <!-- 登录/注册模态框 -->
+    <div class="auth-modal" id="authModal" style="display: none;">
+        <div class="auth-content">
+            <!-- 登录表单 -->
+            <div class="auth-form" id="loginForm" style="display: block;">
+                <h2>登录</h2>
+                <div class="form-group">
+                    <label for="loginEmail">邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="请输入邮箱" class="auth-input">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" class="auth-input">
+                </div>
+                <button class="auth-btn" id="loginBtn">登录</button>
+                <p class="auth-switch">没有账号？<a href="#" id="switchToRegister">立即注册</a></p>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <h2>注册</h2>
+                <div class="form-group">
+                    <label for="registerEmail">邮箱</label>
+                    <input type="email" id="registerEmail" placeholder="请输入邮箱" class="auth-input">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">密码</label>
+                    <input type="password" id="registerPassword" placeholder="请输入密码（至少6位）" class="auth-input">
+                </div>
+                <div class="form-group">
+                    <label for="registerConfirmPassword">确认密码</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="请再次输入密码" class="auth-input">
+                </div>
+                <button class="auth-btn" id="registerBtn">注册</button>
+                <p class="auth-switch">已有账号？<a href="#" id="switchToLogin">立即登录</a></p>
+            </div>
+            
+            <button class="close-btn" id="closeAuth">关闭</button>
+        </div>
+    </div>
+    
+    <!-- 强制停盘模态框 -->
     <div class="alert-modal" id="alertModal" style="display: none;">
         <div class="alert-content">
             <h2>触发强制停盘纪律！</h2>
@@ -173,8 +223,22 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://gmeuagutgxewrrqrbsyb.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZXVhZ3V0Z3hld3JycXJic3liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0ODM5MjMsImV4cCI6MjA4NDA1OTkyM30.qM1ail5saTF8PGVahRzv1SpTabRPaBXb4xr5oJdBx8I';
+        
+        // 确保Supabase SDK已加载
+        if (typeof supabase !== 'undefined') {
+            // 初始化Supabase客户端
+            window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } else {
+            console.error('Supabase SDK未加载');
+        }
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
