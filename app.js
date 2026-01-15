@@ -567,10 +567,18 @@ async function saveTodayScore() {
     const today = new Date().toISOString().split('T')[0];
     const totalScore = scores.reduce((sum, score) => sum + score, 0);
     
-    // 保存到Supabase
+    // 保存到Supabase（先删除当天数据，再插入新数据）
+    // 1. 删除当天数据
+    await window.supabase
+        .from('trading_scores')
+        .delete()
+        .eq('user_id', userId)
+        .eq('date', today);
+    
+    // 2. 插入新数据
     const { data, error } = await window.supabase
         .from('trading_scores')
-        .upsert({
+        .insert({
             user_id: userId,
             date: today,
             dimensions: scores,
