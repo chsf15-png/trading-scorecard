@@ -530,17 +530,19 @@ async function loadScoresFromSupabase() {
     
     if (error) {
         console.error('加载评分数据失败:', error);
-        return;
+        throw error;
     }
     
     // 转换为本地格式
     let scoreHistory = {};
-    data.forEach(record => {
-        scoreHistory[record.date] = {
-            total: record.total_score,
-            dimensions: record.dimensions
-        };
-    });
+    if (data && Array.isArray(data)) {
+        data.forEach(record => {
+            scoreHistory[record.date] = {
+                total: record.total_score,
+                dimensions: record.dimensions
+            };
+        });
+    }
     
     // 保存到localStorage（作为缓存）
     localStorage.setItem('scoreHistory', JSON.stringify(scoreHistory));
@@ -852,21 +854,24 @@ async function loadPositionsFromSupabase() {
     const { data, error } = await window.supabase
         .from('core_positions')
         .select('*')
-        .eq('user_id', USER_ID)
+        .eq('user_id', userId)
         .order('created_at', { ascending: true });
     
     if (error) {
         console.error('加载持仓数据失败:', error);
-        return;
+        throw error;
     }
     
     // 转换为本地格式
-    positions = data.map(record => ({
-        id: record.id,
-        name: record.name,
-        percentage: record.percentage,
-        logic: record.logic
-    }));
+    positions = [];
+    if (data && Array.isArray(data)) {
+        positions = data.map(record => ({
+            id: record.id,
+            name: record.name,
+            percentage: record.percentage,
+            logic: record.logic
+        }));
+    }
     
     // 保存到localStorage（作为缓存）
     localStorage.setItem('positions', JSON.stringify(positions));
@@ -1050,19 +1055,21 @@ async function loadProfitsFromSupabase() {
     const { data, error } = await window.supabase
         .from('trading_profits')
         .select('*')
-        .eq('user_id', USER_ID)
+        .eq('user_id', userId)
         .order('date', { ascending: true });
     
     if (error) {
         console.error('加载收益数据失败:', error);
-        return;
+        throw error;
     }
     
     // 转换为本地格式
     let history = {};
-    data.forEach(record => {
-        history[record.date] = record.profit;
-    });
+    if (data && Array.isArray(data)) {
+        data.forEach(record => {
+            history[record.date] = record.profit;
+        });
+    }
     
     // 更新本地数据
     profitData.history = history;
