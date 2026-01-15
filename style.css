@@ -237,6 +237,116 @@ header {
     font-size: 0.8rem;
 }
 
+/* 持仓操作按钮 */
+.position-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.edit-position-btn {
+    background-color: #4D96FF;
+    color: #ffffff;
+    padding: 8px 15px;
+    font-size: 0.8rem;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    cursor: pointer;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+}
+
+.edit-position-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #333333;
+}
+
+.edit-position-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #333333;
+}
+
+/* 编辑模式样式 */
+.position-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.position-edit-input, .position-edit-textarea {
+    padding: 12px;
+    font-size: 0.9rem;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.position-edit-input:focus, .position-edit-textarea:focus {
+    outline: none;
+    border-color: #FF6B6B;
+    box-shadow: 4px 4px 0px #FF6B6B;
+}
+
+.position-edit-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.position-edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.save-edit-btn {
+    background-color: #6BCB77;
+    color: #ffffff;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    cursor: pointer;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+}
+
+.save-edit-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #333333;
+}
+
+.save-edit-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #333333;
+}
+
+.cancel-edit-btn {
+    background-color: #FFD93D;
+    color: #333333;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    cursor: pointer;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+}
+
+.cancel-edit-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #333333;
+}
+
+.cancel-edit-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #333333;
+}
+
 /* Main Content */
 h2 {
     font-size: 1.5rem;
@@ -461,6 +571,119 @@ h2 {
     padding: 20px;
     height: 400px;
     box-shadow: 8px 8px 0px #333333;
+}
+
+/* Radar Chart Section */
+.radar-chart-section {
+    margin-bottom: 40px;
+}
+
+.radar-chart-section .chart-container {
+    border-color: #FF6B6B;
+}
+
+/* Correlation Section */
+.correlation-section {
+    margin-bottom: 40px;
+    background-color: #ffffff;
+    border: 4px solid #FFD93D;
+    padding: 25px;
+    box-shadow: 8px 8px 0px #333333;
+}
+
+.correlation-content {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.correlation-display {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.correlation-item {
+    text-align: center;
+    background-color: #f0f0f0;
+    padding: 20px;
+    border: 3px solid #333333;
+    box-shadow: 6px 6px 0px #333333;
+    min-width: 200px;
+}
+
+.correlation-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.correlation-value {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #6BCB77;
+    text-shadow: 3px 3px 0px #333333;
+}
+
+.correlation-interpretation {
+    background-color: #f0f0f0;
+    padding: 20px;
+    border: 3px solid #333333;
+    box-shadow: 6px 6px 0px #333333;
+    font-size: 1rem;
+    color: #333333;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.correlation-chart-container {
+    background-color: #ffffff;
+    border: 3px solid #333333;
+    padding: 20px;
+    height: 400px;
+    box-shadow: 6px 6px 0px #333333;
+}
+
+/* Export Section */
+.export-section {
+    margin-bottom: 40px;
+    background-color: #ffffff;
+    border: 4px solid #6BCB77;
+    padding: 25px;
+    box-shadow: 8px 8px 0px #333333;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.export-btn {
+    background-color: #6BCB77;
+    color: #ffffff;
+    font-size: 1rem;
+    padding: 15px 30px;
+    border: 3px solid #333333;
+    box-shadow: 4px 4px 0px #333333;
+    cursor: pointer;
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+}
+
+.export-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #333333;
+}
+
+.export-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #333333;
 }
 
 /* Alert Modal */

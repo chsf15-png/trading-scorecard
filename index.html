@@ -124,6 +124,42 @@
                         <canvas id="scoreChart"></canvas>
                     </div>
                 </section>
+                
+                <!-- 雷达图：分维度统计 -->
+                <section class="radar-chart-section">
+                    <h2>分维度统计</h2>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </section>
+                
+                <!-- 相关性分析 -->
+                <section class="correlation-section">
+                    <h2>盈亏相关性分析</h2>
+                    <div class="correlation-content">
+                        <div class="correlation-display">
+                            <div class="correlation-item">
+                                <div class="correlation-label">相关性系数</div>
+                                <div class="correlation-value" id="correlationValue">0.00</div>
+                            </div>
+                            <div class="correlation-interpretation" id="correlationInterpretation">
+                                暂无足够数据进行分析
+                            </div>
+                        </div>
+                        <div class="correlation-chart-container">
+                            <canvas id="correlationChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 导出功能 -->
+                <section class="export-section">
+                    <h2>导出复盘报告</h2>
+                    <div class="export-buttons">
+                        <button class="export-btn" id="exportImageBtn">一键生成长图</button>
+                        <button class="export-btn" id="exportPDFBtn">导出PDF</button>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
@@ -137,6 +173,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

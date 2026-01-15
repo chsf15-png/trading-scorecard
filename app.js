@@ -1,6 +1,8 @@
 // 全局变量
 let scores = [0, 0, 0, 0, 0];
 let chart = null;
+let radarChart = null;
+let correlationChart = null;
 let positions = [];
 let profitData = {
     today: 0,
@@ -16,9 +18,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initSaveButton();
     initAlertModal();
     initChart();
+    initRadarChart();
+    initCorrelationChart();
     initPositions();
     initProfit();
+    initExport();
     updateTotalScore();
+    updateCorrelation();
 });
 
 // 初始化时间显示
@@ -270,6 +276,98 @@ function updateChart() {
     chart.data.labels = labels;
     chart.data.datasets[0].data = data;
     chart.update();
+    
+    // 更新其他图表
+    updateRadarChart();
+    updateCorrelation();
+}
+
+// 初始化雷达图
+function initRadarChart() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['盘前准备', '信号执行', '风险控制', '盘中定力', '复盘归档'],
+            datasets: [{
+                label: '平均得分',
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                borderColor: '#FF6B6B',
+                borderWidth: 3,
+                pointBackgroundColor: '#FF6B6B',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 2,
+                    ticks: {
+                        stepSize: 0.5,
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+    
+    updateRadarChart();
+}
+
+// 更新雷达图数据
+function updateRadarChart() {
+    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+    
+    if (Object.keys(scoreHistory).length === 0) {
+        radarChart.data.datasets[0].data = [0, 0, 0, 0, 0];
+        radarChart.update();
+        return;
+    }
+    
+    // 计算各维度平均得分
+    const dimensionScores = [0, 0, 0, 0, 0];
+    let totalEntries = 0;
+    
+    for (const [date, data] of Object.entries(scoreHistory)) {
+        if (data.dimensions) {
+            dimensionScores[0] += data.dimensions[0];
+            dimensionScores[1] += data.dimensions[1];
+            dimensionScores[2] += data.dimensions[2];
+            dimensionScores[3] += data.dimensions[3];
+            dimensionScores[4] += data.dimensions[4];
+            totalEntries++;
+        }
+    }
+    
+    // 计算平均值
+    const avgScores = dimensionScores.map(score => totalEntries > 0 ? (score / totalEntries).toFixed(1) : 0);
+    
+    // 更新雷达图
+    radarChart.data.datasets[0].data = avgScores;
+    radarChart.update();
 }
 
 // 检查预警条件
@@ -365,14 +463,31 @@ function renderPositions() {
         const isHighRisk = position.percentage > 30;
         return `
             <div class="position-item">
-                <div class="position-header">
-                    <div class="position-name">${position.name}</div>
-                    <div class="position-percentage ${isHighRisk ? 'high-risk' : ''}">
-                        ${position.percentage}%
+                <!-- 显示模式 -->
+                <div class="position-view" id="positionView-${index}">
+                    <div class="position-header">
+                        <div class="position-name">${position.name}</div>
+                        <div class="position-percentage ${isHighRisk ? 'high-risk' : ''}">
+                            ${position.percentage}%
+                        </div>
+                    </div>
+                    <div class="position-logic">${position.logic}</div>
+                    <div class="position-actions">
+                        <button class="edit-position-btn" onclick="editPosition(${index})">修改</button>
+                        <button class="delete-position-btn" onclick="deletePosition(${index})">删除</button>
                     </div>
                 </div>
-                <div class="position-logic">${position.logic}</div>
-                <button class="delete-position-btn" onclick="deletePosition(${index})">删除</button>
+                
+                <!-- 编辑模式 -->
+                <div class="position-edit" id="positionEdit-${index}" style="display: none;">
+                    <input type="text" id="editName-${index}" value="${position.name}" class="position-edit-input">
+                    <input type="number" id="editPercentage-${index}" value="${position.percentage}" step="0.1" min="0" max="100" class="position-edit-input">
+                    <textarea id="editLogic-${index}" class="position-edit-textarea">${position.logic}</textarea>
+                    <div class="position-edit-actions">
+                        <button class="save-edit-btn" onclick="saveEdit(${index})">保存</button>
+                        <button class="cancel-edit-btn" onclick="cancelEdit(${index})">取消</button>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
@@ -424,6 +539,52 @@ function deletePosition(index) {
     }
 }
 
+// 进入编辑模式
+function editPosition(index) {
+    // 隐藏显示模式
+    document.getElementById(`positionView-${index}`).style.display = 'none';
+    // 显示编辑模式
+    document.getElementById(`positionEdit-${index}`).style.display = 'block';
+}
+
+// 保存修改
+function saveEdit(index) {
+    const name = document.getElementById(`editName-${index}`).value.trim();
+    const percentage = parseFloat(document.getElementById(`editPercentage-${index}`).value);
+    const logic = document.getElementById(`editLogic-${index}`).value.trim();
+    
+    if (!name || isNaN(percentage) || percentage <= 0) {
+        alert('请填写完整的股票名称和有效仓位');
+        return;
+    }
+    
+    // 检查仓位是否超过30%
+    if (percentage > 30) {
+        alert('违背持仓原则，请先留意风险！');
+    }
+    
+    // 更新持仓数据
+    positions[index] = {
+        name: name,
+        percentage: percentage,
+        logic: logic
+    };
+    
+    // 保存到localStorage
+    savePositions();
+    
+    // 重新渲染持仓列表
+    renderPositions();
+}
+
+// 取消编辑
+function cancelEdit(index) {
+    // 隐藏编辑模式
+    document.getElementById(`positionEdit-${index}`).style.display = 'none';
+    // 显示显示模式
+    document.getElementById(`positionView-${index}`).style.display = 'block';
+}
+
 // 初始化收益记录功能
 function initProfit() {
     loadProfitData();
@@ -454,6 +615,170 @@ function loadProfitData() {
 // 保存收益数据到localStorage
 function saveProfitData() {
     localStorage.setItem('profitData', JSON.stringify(profitData));
+}
+
+// 初始化相关性图表
+function initCorrelationChart() {
+    const ctx = document.getElementById('correlationChart').getContext('2d');
+    
+    correlationChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: '得分 vs 收益',
+                data: [],
+                backgroundColor: 'rgba(77, 150, 255, 0.8)',
+                borderColor: '#4D96FF',
+                borderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '今日得分',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    beginAtZero: true,
+                    max: 10,
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: '今日收益 (元)',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 计算相关性系数
+function calculateCorrelation() {
+    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || {};
+    const profitHistory = profitData.history;
+    
+    // 准备数据点
+    const dataPoints = [];
+    
+    for (const [date, scoreData] of Object.entries(scoreHistory)) {
+        if (profitHistory[date] !== undefined) {
+            dataPoints.push({
+                x: scoreData.total,
+                y: profitHistory[date]
+            });
+        }
+    }
+    
+    if (dataPoints.length < 3) {
+        return {
+            correlation: 0,
+            points: []
+        };
+    }
+    
+    // 计算平均值
+    const avgX = dataPoints.reduce((sum, point) => sum + point.x, 0) / dataPoints.length;
+    const avgY = dataPoints.reduce((sum, point) => sum + point.y, 0) / dataPoints.length;
+    
+    // 计算相关性系数
+    let numerator = 0;
+    let sumSqX = 0;
+    let sumSqY = 0;
+    
+    for (const point of dataPoints) {
+        const xDiff = point.x - avgX;
+        const yDiff = point.y - avgY;
+        
+        numerator += xDiff * yDiff;
+        sumSqX += xDiff * xDiff;
+        sumSqY += yDiff * yDiff;
+    }
+    
+    const denominator = Math.sqrt(sumSqX * sumSqY);
+    const correlation = denominator === 0 ? 0 : numerator / denominator;
+    
+    return {
+        correlation: parseFloat(correlation.toFixed(2)),
+        points: dataPoints
+    };
+}
+
+// 更新相关性分析
+function updateCorrelation() {
+    const result = calculateCorrelation();
+    const correlationValue = document.getElementById('correlationValue');
+    const correlationInterpretation = document.getElementById('correlationInterpretation');
+    
+    // 更新相关性系数
+    correlationValue.textContent = result.correlation;
+    
+    // 更新散点图
+    correlationChart.data.datasets[0].data = result.points;
+    correlationChart.update();
+    
+    // 更新解释文本
+    let interpretation = '';
+    if (result.points.length < 3) {
+        interpretation = '暂无足够数据进行分析（需要至少3个数据点）';
+    } else {
+        if (result.correlation > 0.7) {
+            interpretation = '高度正相关：得分高时收益也高，交易系统表现良好！';
+        } else if (result.correlation > 0.3) {
+            interpretation = '中度正相关：得分与收益有一定关联，交易系统基本有效。';
+        } else if (result.correlation > -0.3) {
+            interpretation = '弱相关或无相关：得分与收益关联不大，需要检查交易系统。';
+        } else if (result.correlation > -0.7) {
+            interpretation = '中度负相关：得分高时收益反而低，交易系统可能存在问题！';
+        } else {
+            interpretation = '高度负相关：得分高时收益低，得分低时收益高，说明只是运气好，长期很危险！';
+        }
+    }
+    correlationInterpretation.textContent = interpretation;
 }
 
 // 保存今日收益
@@ -518,5 +843,76 @@ function renderProfit() {
     // 渲染今年累计收益
     const yearFormatted = profitData.year.toFixed(2);
     yearProfitValue.textContent = `¥${yearFormatted}`;
-    yearProfitValue.className = `profit-value ${profitData.year < 0 ? 'negative' : ''}`;
+    yearProfitValue.className = `profit-value ${yearProfitValue < 0 ? 'negative' : ''}`;
+}
+
+// 初始化导出功能
+function initExport() {
+    const exportImageBtn = document.getElementById('exportImageBtn');
+    const exportPDFBtn = document.getElementById('exportPDFBtn');
+    
+    exportImageBtn.addEventListener('click', exportAsImage);
+    exportPDFBtn.addEventListener('click', exportAsPDF);
+}
+
+// 导出为图片
+async function exportAsImage() {
+    const container = document.querySelector('.container');
+    
+    try {
+        // 使用html2canvas将页面转换为canvas
+        const canvas = await html2canvas(container, {
+            scale: 2, // 提高分辨率
+            useCORS: true, // 允许跨域图片
+            backgroundColor: '#ffffff'
+        });
+        
+        // 将canvas转换为图片链接
+        const imageUrl = canvas.toDataURL('image/png');
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `交易复盘报告_${new Date().toISOString().split('T')[0]}.png`;
+        link.click();
+    } catch (error) {
+        console.error('导出图片失败:', error);
+        alert('导出图片失败，请重试');
+    }
+}
+
+// 导出为PDF
+async function exportAsPDF() {
+    const container = document.querySelector('.container');
+    
+    try {
+        // 使用html2canvas将页面转换为canvas
+        const canvas = await html2canvas(container, {
+            scale: 2, // 提高分辨率
+            useCORS: true, // 允许跨域图片
+            backgroundColor: '#ffffff'
+        });
+        
+        // 导入jsPDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        // 计算PDF尺寸和缩放比例
+        const imgWidth = 210; // A4宽度，单位mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        // 将canvas转换为图片并添加到PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        
+        // 保存PDF
+        pdf.save(`交易复盘报告_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+        console.error('导出PDF失败:', error);
+        alert('导出PDF失败，请重试');
+    }
 }
