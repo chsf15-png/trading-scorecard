@@ -884,12 +884,12 @@ async function savePositions() {
         await window.supabase
             .from('core_positions')
             .delete()
-            .eq('user_id', USER_ID);
+            .eq('user_id', userId);
         
         // 批量插入新数据
         if (positions.length > 0) {
             const positionData = positions.map(pos => ({
-                user_id: USER_ID,
+                user_id: userId,
                 name: pos.name,
                 percentage: pos.percentage,
                 logic: pos.logic
@@ -1093,7 +1093,7 @@ async function saveProfitData() {
     const { data, error } = await window.supabase
         .from('trading_profits')
         .upsert({
-            user_id: USER_ID,
+            user_id: userId,
             date: today,
             profit: profitData.today
         })
