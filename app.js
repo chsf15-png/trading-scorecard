@@ -1111,9 +1111,17 @@ async function saveProfitData() {
     // 保存当前收益到Supabase
     const today = new Date().toISOString().split('T')[0];
     
+    // 1. 删除当天数据
+    await window.supabase
+        .from('trading_profits')
+        .delete()
+        .eq('user_id', userId)
+        .eq('date', today);
+    
+    // 2. 插入新数据
     const { data, error } = await window.supabase
         .from('trading_profits')
-        .upsert({
+        .insert({
             user_id: userId,
             date: today,
             profit: profitData.today
